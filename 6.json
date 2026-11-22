@@ -1,0 +1,32 @@
+{
+  "name": "Skyline FD Certificate - 6-Month Plan",
+  "description": "Soulbound certificate for a 6-month fixed deposit with Skyline Bank of India (SBOI), a fictional bank created for an NCI Blockchain Technologies project. It proves the deposit exists and when it matures. The deposit itself stays in the bank's core banking system; no name or amount is stored on-chain. The certificate cannot be transferred and is burned at maturity, when Skyline Maturity Miles are paid.",
+  "image": "https://daddycassy.github.io/skyline-bank/6.png",
+  "attributes": [
+    {
+      "trait_type": "Bank",
+      "value": "Skyline Bank of India"
+    },
+    {
+      "trait_type": "Plan term (months)",
+      "value": 6
+    },
+    {
+      "trait_type": "Edition",
+      "value": "Sapphire"
+    },
+    {
+      "trait_type": "Standard",
+      "value": "ERC-721"
+    },
+    {
+      "trait_type": "Transferable",
+      "value": "No (soulbound)"
+    },
+    {
+      "trait_type": "Maturity reward",
+      "value": "1 token per Rs 200, pro rata, capped at 2,000 tokens"
+    }
+  ],
+  "external_url": "https://daddycassy.github.io/skyline-bank/"
+}
