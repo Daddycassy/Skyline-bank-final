@@ -339,7 +339,7 @@
       <div class="tile"><div class="step-n">STEP 05</div><h3>Perk catalogue</h3><p class="sub">Pick a perk from the catalogue (17 perks from the report). The ID and price fill in automatically.</p><label>Perk</label><select id="pName"></select>
         <div class="row"><div><label>Perk ID</label><input id="pId" type="number" value="1"></div><div><label>Miles</label><input id="pCost" type="number" value="200"></div></div>
         <div class="actions"><button class="btn-mint" id="perkBtn">Save</button><button class="btn-line" id="perkOffBtn">Switch off</button><button class="btn-line btn-small" id="perkAllBtn">Add all 17 perks</button></div></div>
-      <div class="tile"><div class="step-n">STEP 06</div><h3>Certificate artwork</h3><p class="sub">Makes the certificates show their picture in MetaMask. Do this once after deploying.</p><label>Artwork folder</label><input id="artBase"><div class="actions"><button class="btn-mint" id="planArtBtn">Link artwork for all 4 plans</button></div><p class="note" style="margin-top:14px">Optional: one personalised file for a single certificate.</p><label>Certificate number</label><input id="uId" type="number" placeholder="1"><label>Metadata URI</label><input id="uUri" placeholder="ipfs://CID/0001.json"><div class="actions"><button class="btn-navy" id="uriBtn">Set token URI</button></div></div>
+      <div class="tile"><div class="step-n">STEP 06</div><h3>Certificate artwork</h3><p class="sub">Makes the certificates show their picture in MetaMask. Do this once after deploying.</p><div class="actions"><button class="btn-mint" id="chainArtBtn">Store artwork on-chain (4 plans)</button></div><p class="note" style="margin-top:10px">Recommended: the picture is saved inside the contract, so MetaMask needs no website.</p><label>Or link GitHub files</label><input id="artBase"><div class="actions"><button class="btn-line btn-small" id="planArtBtn">Link GitHub artwork</button></div><p class="note" style="margin-top:14px">Optional: one personalised file for a single certificate.</p><label>Certificate number</label><input id="uId" type="number" placeholder="1"><label>Metadata URI</label><input id="uUri" placeholder="ipfs://CID/0001.json"><div class="actions"><button class="btn-navy" id="uriBtn">Set token URI</button></div></div>
     </div>
     <div class="tile" style="margin-top:18px"><h3>Live ledger</h3><p class="sub">Every action is a public record on Sepolia.</p><div class="log" id="log"><p class="note">Loading…</p></div></div>
   </div>
@@ -368,6 +368,7 @@ const CERT_ABI = [
   "function mature(uint256 tokenId)",
   "function setTokenURI(uint256 tokenId, string uri)",
   "function setPlanURI(uint16 termMonths, string uri)",
+  "function tokenURI(uint256 tokenId) view returns (string)",
   "event CertificateIssued(uint256 indexed tokenId, address indexed holder, uint16 termMonths, uint64 maturityDate)",
   "event CertificateMatured(uint256 indexed tokenId, address indexed holder, uint16 termMonths)"
 ];
@@ -603,7 +604,31 @@ $("perkAllBtn").onclick = async () => {
 };
 $("perkBtn").onclick = () => send(() => tokenW.setPerk($("pId").value, $("pName").value, $("pCost").value, true), "Perk saved.");
 $("perkOffBtn").onclick = () => send(() => tokenW.setPerk($("pId").value, $("pName").value, $("pCost").value || 1, false), "Perk switched off.");
-$("artBase").value = "https://daddycassy.github.io/skyline-bank/";
+
+// ---------- on-chain artwork: the picture and details are stored inside the contract as a data: URI ----------
+function b64(str) { return btoa(unescape(encodeURIComponent(str))); }
+function dataURI(meta) { return "data:application/json;base64," + b64(JSON.stringify(meta)); }
+
+const PLAN_ART = { 6: ["SAPPHIRE", "#0b1a4a", "#2546b8", "#6f9bff"], 12: ["EMERALD", "#03251f", "#0c7a62", "#4fe3b8"], 24: ["AMBER", "#3a1604", "#a4490f", "#f7b955"], 36: ["AMETHYST", "#1c0b45", "#5a2fc2", "#c3aaff"] };
+function planSVG(t) {
+  const [ed, a, b, c] = PLAN_ART[t];
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset=".55" stop-color="${b}"/><stop offset=".8" stop-color="${c}"/><stop offset="1" stop-color="${a}"/></linearGradient><linearGradient id="h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e3a7"/><stop offset=".5" stop-color="#b88a35"/><stop offset="1" stop-color="#f1d48d"/></linearGradient></defs><rect width="500" height="500" fill="#05060a"/><rect x="30" y="110" width="440" height="280" rx="26" fill="url(#g)" stroke="#fff" stroke-opacity=".3"/><circle cx="78" cy="160" r="16" fill="none" stroke="#fff" stroke-width="3"/><rect x="70" y="160" width="4" height="9" fill="#fff"/><rect x="76" y="154" width="4" height="15" fill="#fff"/><rect x="82" y="150" width="4" height="19" fill="#fff"/><text x="104" y="168" font-family="Georgia,serif" font-size="24" fill="#fff">Skyline Bank</text><text x="440" y="166" text-anchor="end" font-family="monospace" font-size="15" fill="#fff" opacity=".85">SBOI</text><rect x="60" y="200" width="52" height="38" rx="8" fill="url(#h)"/><text x="60" y="300" font-family="Georgia,serif" font-size="58" fill="#fff">${t} months</text><text x="62" y="330" font-family="Arial" font-weight="bold" font-size="13" letter-spacing="3" fill="#fff" opacity=".85">${ed} EDITION · FIXED DEPOSIT</text><text x="62" y="365" font-family="Arial" font-size="12" letter-spacing="2" fill="#fff" opacity=".7">SOULBOUND ERC-721 · SEPOLIA</text><path d="M30 470h440v-28h-20v-30h-16v30h-22v-48h-18v48h-20v-22h-24v22h-18v-60h-16v60h-24v-36h-22v36h-20v-26h-26v26h-18v-54h-18v54h-22v-32h-20v32h-24v-20h-22v20h-18v-44h-18v44h-20z" fill="#5ef2c7" opacity=".25"/><text x="250" y="80" text-anchor="middle" font-family="Georgia,serif" font-size="22" fill="#eef1f8">Skyline Bank of India</text></svg>`;
+}
+function planMeta(t) {
+  return { name: `Skyline FD Certificate - ${t}-Month Plan`, description: `Soulbound certificate for a ${t}-month fixed deposit with Skyline Bank of India (fictional, NCI Blockchain Technologies project). It proves the deposit exists and when it matures; no name or amount is stored on-chain. Burned at maturity, when Skyline Maturity Miles are paid.`,
+    image: new URL(t + ".png", location.href).href,
+    attributes: [{ trait_type: "Bank", value: "Skyline Bank of India" }, { trait_type: "Plan term (months)", value: t }, { trait_type: "Edition", value: PLAN_ART[t][0] }, { trait_type: "Transferable", value: "No (soulbound)" }] };
+}
+$("chainArtBtn").onclick = async () => {
+  if (!location.href.startsWith("https://")) return toast("Open the live GitHub Pages site first, so the picture links point to your published PNG files.", 9000);
+  if (!signer) return toast("Connect the bank wallet first.");
+  for (const t of [6, 12, 24, 36]) {
+    try { toast(`Storing the ${t}-month artwork on-chain: confirm in MetaMask…`, 40000); const tx = await certW.setPlanURI(t, dataURI(planMeta(t))); await tx.wait(); }
+    catch (e) { return toast("✖ Stopped at the " + t + "-month plan: " + errMsg(e), 9000); }
+  }
+  toast("✔ Artwork stored on-chain for all 4 plans. In MetaMask, remove the NFT and import it again.", 10000);
+};
+$("artBase").value = new URL("./", location.href).href;
 $("planArtBtn").onclick = async () => {
   if (!signer) return toast("Connect the bank wallet first.");
   const base = $("artBase").value.trim().replace(/\/?$/, "/");
@@ -615,13 +640,31 @@ $("planArtBtn").onclick = async () => {
 };
 $("uriBtn").onclick = () => { const id = $("uId").value, u = $("uUri").value.trim(); if (!id || !u) return toast("Enter a certificate number and URI."); send(() => certW.setTokenURI(id, u), "Artwork linked."); };
 
+
+// ---------- NFT artwork checker: reads tokenURI from the chain, fetches the metadata and shows the image ----------
+async function nftCheck(contract, id) {
+  const rows = [];
+  const ok = (t) => rows.push(`<div>✅ ${t}</div>`), bad = (t) => rows.push(`<div>❌ ${t}</div>`);
+  let uri = "", meta = null;
+  try { uri = await contract.tokenURI(id); } catch (e) { bad("Could not read tokenURI: " + errMsg(e)); return box(); }
+  if (!uri) { bad("tokenURI is <b>empty</b>. The artwork link was not set on this contract. Use the Link artwork button in the console with the owner wallet."); return box(); }
+  ok(uri.startsWith("data:") ? "tokenURI on the blockchain: artwork stored on-chain (" + uri.length + " characters)" : `tokenURI on the blockchain: <a target="_blank" href="${uri}">${uri}</a>`);
+  if (uri.startsWith("ipfs://")) { bad("The link is an ipfs:// placeholder, not your GitHub file. Click Link artwork again."); return box(); }
+  try { const r = await fetch(uri, { cache: "no-store" }); if (!r.ok) throw new Error("HTTP " + r.status); meta = await r.json(); ok(`Metadata file opens: <b>${meta.name || "(no name)"}</b>`); }
+  catch (e) { bad(`The metadata file does not open (${e.message}). Check the file is uploaded to the main folder of the repo and the Actions tab shows a green tick.`); return box(); }
+  if (!meta.image) { bad("The metadata file has no image link."); return box(); }
+  rows.push(`<div id="imgRow">⏳ Loading image…</div><img src="${meta.image}" style="width:180px;border-radius:12px;margin-top:10px;display:block" onload="this.previousElementSibling.innerHTML='✅ Image opens. Everything on your side is correct; if MetaMask is still blank, remove the NFT and import it again.'" onerror="this.previousElementSibling.innerHTML='❌ The image does not open. Check the .png file is uploaded with the exact same name.'; this.remove()">`);
+  return box();
+  function box() { return `<div class="nftchk" style="margin-top:16px;padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.25);font-size:13px;line-height:1.9;text-align:left;word-break:break-all"><b style="letter-spacing:1.5px;font-size:11px">NFT ARTWORK CHECK (what MetaMask sees)</b>${rows.join("")}</div>`; }
+}
+
 // public verification
 $("chkBtn").onclick = async () => {
   const out = $("chkOut"), id = $("chkId").value; if (!id) return toast("Enter a certificate number.");
   out.innerHTML = '<p class="note">Checking the blockchain…</p>';
   try {
     const holder = await certR.ownerOf(id); const d = await certR.deposits(id);
-    out.innerHTML = `<p><span class="badge b-ok">GENUINE AND ACTIVE</span> <span class="note" style="margin-left:8px;font-family:var(--mono)">held by ${short(holder)}</span></p>` + fdHTML(id, d, true);
+    out.innerHTML = `<p><span class="badge b-ok">GENUINE AND ACTIVE</span> <span class="note" style="margin-left:8px;font-family:var(--mono)">held by ${short(holder)}</span></p>` + fdHTML(id, d, true) + await nftCheck(certR, id);
   } catch (e) { out.innerHTML = '<p><span class="badge b-no">NOT ACTIVE</span></p><p class="note">No active certificate with this number. It may never have been issued, or it has already matured and been burned.</p>'; }
 };
 
